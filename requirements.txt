@@ -6,3 +6,4 @@ python-dotenv
 pydantic
 bs4
 requests
+selenium
