@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.v1.endpoints.analyze import router as analyze_router
+from app.api.v1.endpoints.onboarding import router as analyze_router
 
 app = FastAPI()
 

@@ -10,6 +10,7 @@ async def analyze_with_website_endpoint(data: AnalyzeRequestWithWebsite):
     analysis = analyze_with_website(data.website_name, data.url, data.mission)
     return AnalyzeResponse(**analysis)
 
+
 @router.post("/analyze-without-website", response_model=AnalyzeResponse)
 async def analyze_without_website_endpoint(data: AnalyzeRequestWithoutWebsite):
     analysis = analyze_without_website(data.mission, data.core_purpose, data.type_of_work, data.goals_aspirations)
