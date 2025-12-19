@@ -41,28 +41,6 @@ Write in professional grantsmanship language.
 Return JSON only.
 """
 
-TGCI_GRANT_ANALYSIS_PROMPT = """
-You are a TGCI-trained grants evaluator.
-
-Compare the organization’s profile (mission, programs, achievements) with the provided grant opportunity text.
-
-Return a JSON object:
-
-{
-  "key_strengths": "Text describing alignment strengths",
-  "areas_for_improvement": "Text describing gaps or weaknesses",
-  "extracted_details": {
-      "founder_name": "...",
-      "focus_area": "...",
-      "deadline": "...",
-      "eligibility": "...",
-      "attachment_required": "...",
-      "application_format": "..."
-  },
-  "status": "NOT_ALIGNED | POSSIBLY_ALIGNED | STRONG_FIT"
-}
-"""
-
 
 def normalize_generated_output(gen_output: dict) -> dict:
     if not gen_output:

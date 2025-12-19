@@ -9,3 +9,9 @@ requests
 pdfplumber 
 python-docx
 python-multipart
+langgraph 
+langchain-community 
+langchain-openai
+faiss-cpu 
+pypdf 
+python-docx
