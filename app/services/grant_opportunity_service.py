@@ -1,12 +1,14 @@
 from app.services.llm_service import client
 from app.schemas.grant_opportunity import GrantOpportunityAnalysis, GrantOpportunityDetails
+from app.services.tgci_knowledge import load_tgci_knowledge
+
 import json
 
 import io
 import pdfplumber
 from docx import Document
 
-
+tgci_knowledge = load_tgci_knowledge()
 
 TGCI_GRANT_ANALYSIS_PROMPT = """
 You are a TGCI-trained grants evaluator.
@@ -30,6 +32,7 @@ ONLY IF the text IS a real grant opportunity:
 - Extract factual grant details ONLY if explicitly stated
 - Do NOT guess or hallucinate missing details
 
+Not only find out, there have some mission, programs, achievements. Ensure these are match  with the grant opportunity.
 if the organization is fit with the grant opportunity then
 Return JSON ONLY in the following format:
 
@@ -100,10 +103,47 @@ def analyze_grant_opportunity(input_data):
     # Call OpenAI to analyze alignment
     ai_response = client.chat.completions.create(
         model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": TGCI_GRANT_ANALYSIS_PROMPT},
-            {"role": "user", "content": opportunity_text}
-        ],
+        messages = [
+    {
+        "role": "system",
+        "content": f"""
+You are a TGCI-trained grants evaluator.
+
+You deeply understand:
+- how real RFPs are written
+- required grant components
+- evaluation logic
+- funder expectations
+- proposal structure
+
+Use TGCI KNOWLEDGE to VERIFY:
+- structure
+- completeness
+- legitimacy
+- alignment patterns
+
+If the input does NOT match known grant/RFP patterns,
+treat it as NOT a real grant opportunity.
+
+TGCI KNOWLEDGE:
+{tgci_knowledge}
+"""
+    },
+    {
+        "role": "system",
+        "content": TGCI_GRANT_ANALYSIS_PROMPT
+    },
+    {
+        "role": "user",
+        "content": f"""
+ORGANIZATION PROFILE:
+{input_data.organization_profile}
+
+GRANT INPUT:
+{opportunity_text}
+"""
+    }
+],
         temperature=0.2
     )
 

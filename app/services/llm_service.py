@@ -1,15 +1,17 @@
 from openai import OpenAI
-from app.config import OPENAI_API_KEY, MODEL_NAME
+from app.config import OPENAI_API_KEY
+from app.services.tgci_knowledge import load_tgci_knowledge
 import json
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-
+tgci_knowledge = load_tgci_knowledge()
 
 TGCI_READINESS_PROMPT = """
 You are a TGCI-trained grant readiness evaluator.
 
-Step 1: Determine if the organization is ready for grant funding.
+Evaluate whether the organization is ready for grant funding
+based ONLY on the information explicitly provided.
 
 Evaluate:
 - Mission clarity
@@ -17,28 +19,41 @@ Evaluate:
 - Evidence of impact
 - Organizational maturity
 
-Return JSON:
+STRICT RULES:
+- Do NOT assume missing information
+- Do NOT infer capacity beyond stated facts
+- Penalize unclear, vague, or aspirational-only statements
+
+Return JSON ONLY:
 {
   "status": "GRANT_READY | NEEDS_MINOR_IMPROVEMENTS | NOT_READY",
   "score": 0-100,
   "gaps": [],
   "recommendations": []
 }
+
 """
 
 TGCI_GENERATION_PROMPT = """
-The organization is GRANT READY.
+The organization has been determined to be GRANT READY.
 
-Generate proposal-ready content:
+Generate proposal-ready content using ONLY the information
+explicitly provided in the organization profile.
 
+STRICT RULES:
+- Do NOT invent programs, budgets, metrics, or achievements
+- If information is missing, write in high-level but factual language
+- Use TGCI grantsmanship tone and structure
+- No assumptions, no fictional data
+
+Generate:
 - mission_statement
 - programs
 - achievements
 - budget_statement
 - evaluation
 
-Write in professional grantsmanship language.
-Return JSON only.
+Return JSON ONLY.
 """
 
 
@@ -59,13 +74,39 @@ def normalize_generated_output(gen_output: dict) -> dict:
     return output
 
 
+
 def run_ai_analysis(context: dict):
     ai_response = client.chat.completions.create(
         model="gpt-4.1",
-        messages=[
-            {"role": "system", "content": TGCI_READINESS_PROMPT},
-            {"role": "user", "content": str(context)}
-        ],
+        messages = [
+    {
+        "role": "system",
+        "content": f"""
+You are a TGCI-trained evaluator.
+
+You have internal knowledge of TGCI books, training materials,
+and grantsmanship frameworks.
+
+Use the following TGCI KNOWLEDGE ONLY to:
+- judge correctness
+- evaluate maturity
+- validate structure and patterns
+
+DO NOT quote or reference this knowledge explicitly.
+
+TGCI KNOWLEDGE:
+{tgci_knowledge}
+"""
+    },
+    {
+        "role": "system",
+        "content": TGCI_READINESS_PROMPT
+    },
+    {
+        "role": "user",
+        "content": str(context)
+    }
+],
         temperature=0.2
     )
 
@@ -88,9 +129,26 @@ def run_ai_analysis(context: dict):
         ai_response2 = client.chat.completions.create(
             model="gpt-4.1",
             messages=[
-                {"role": "system", "content": TGCI_GENERATION_PROMPT},
-                {"role": "user", "content": str(context)}
-            ],
+    {
+        "role": "system",
+        "content": f"""
+You are generating content using TGCI grantsmanship standards.
+
+Use TGCI knowledge ONLY for:
+- tone
+- structure
+- evaluation logic
+
+Never invent facts.
+Never embellish missing data.
+
+TGCI KNOWLEDGE:
+{tgci_knowledge}
+"""
+    },
+    {"role": "system", "content": TGCI_GENERATION_PROMPT},
+    {"role": "user", "content": str(context)}
+],
             temperature=0.2
         )
         raw_output = json.loads(ai_response2.choices[0].message.content)
