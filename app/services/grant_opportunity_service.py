@@ -120,7 +120,7 @@ def analyze_grant_opportunity(input_data, session_id: str):
         model="gpt-4.1",
         messages=[
             {"role": "system", "content": TGCI_GRANT_ANALYSIS_PROMPT},
-            {"role": "user", "content": json.dumps(context)}
+            {"role": "user", "content": json.dumps(context, default=str)}
         ],
         temperature=0.2
     )
