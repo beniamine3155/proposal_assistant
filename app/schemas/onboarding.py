@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Union
+from uuid import UUID
 
 # -------- INPUT SCHEMAS --------
 
@@ -16,23 +17,24 @@ class AnalyzeRequestWithoutWebsite(BaseModel):
 
 # -------- OUTPUT SCHEMAS --------
 
-from typing import Union
-
 class AnalyzeResponse(BaseModel):
-    mission_statement: Optional[str] = Field(None)
-    programs: Optional[Union[str, List[dict]]] = Field(None)
-    achievements: Optional[Union[str, List[str]]] = Field(None)
-    budget_statement: Optional[str] = Field(None)
-    evaluation: Optional[str] = Field(None)
+    mission_statement: Optional[str] = None
+    programs: Optional[Union[str, List[dict]]] = None
+    achievements: Optional[Union[str, List[str]]] = None
+    budget_statement: Optional[str] = None
+    evaluation: Optional[str] = None
 
 
 class GrantAnalysisResult(BaseModel):
+    session_id: UUID = Field(...)   # ✅ ADD THIS LINE
+
     status: Literal[
         "GRANT_READY",
         "NEEDS_MINOR_IMPROVEMENTS",
         "NOT_READY"
     ] = Field(...)
+
     score: int = Field(...)
     gaps: List[str] = Field(...)
     recommendations: List[str] = Field(...)
-    generated_output: Optional[AnalyzeResponse] = Field(None)
+    generated_output: Optional[AnalyzeResponse] = None

@@ -7,32 +7,48 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 tgci_knowledge = load_tgci_knowledge()
 
+
 TGCI_READINESS_PROMPT = """
 You are a TGCI-trained grant readiness evaluator.
 
-Evaluate whether the organization is ready for grant funding
-based ONLY on the information explicitly provided.
+Your task is to assess organizational grant readiness using TGCI principles.
+Do NOT invent facts. Base evaluation ONLY on provided information.
 
-Evaluate:
+CLASSIFICATION RULES (VERY IMPORTANT):
+
+1. GRANT_READY
+- Mission is clear and specific
+- Programs are clearly defined
+- Evidence of impact OR a strong track record is present
+- Organizational maturity is demonstrated
+
+2. NEEDS_MINOR_IMPROVEMENTS
+- Mission is clear
+- Programs or services are conceptually defined
+- Some organizational capacity is evident
+- Impact data, evaluation details, or maturity are limited or missing
+
+3. NOT_READY
+- Mission is unclear or too generic
+- Programs are undefined or absent
+- No organizational structure or capacity is evident
+
+EVALUATE:
 - Mission clarity
 - Program definition
 - Evidence of impact
 - Organizational maturity
 
-STRICT RULES:
-- Do NOT assume missing information
-- Do NOT infer capacity beyond stated facts
-- Penalize unclear, vague, or aspirational-only statements
+Return JSON ONLY in the following format:
 
-Return JSON ONLY:
 {
   "status": "GRANT_READY | NEEDS_MINOR_IMPROVEMENTS | NOT_READY",
   "score": 0-100,
   "gaps": [],
   "recommendations": []
 }
-
 """
+
 
 TGCI_GENERATION_PROMPT = """
 The organization has been determined to be GRANT READY.
@@ -82,21 +98,21 @@ def run_ai_analysis(context: dict):
     {
         "role": "system",
         "content": f"""
-You are a TGCI-trained evaluator.
+        You are a TGCI-trained evaluator.
 
-You have internal knowledge of TGCI books, training materials,
-and grantsmanship frameworks.
+        You have internal knowledge of TGCI books, training materials,
+        and grantsmanship frameworks.
 
-Use the following TGCI KNOWLEDGE ONLY to:
-- judge correctness
-- evaluate maturity
-- validate structure and patterns
+        Use the following TGCI KNOWLEDGE ONLY to:
+        - judge correctness
+        - evaluate maturity
+        - validate structure and patterns
 
-DO NOT quote or reference this knowledge explicitly.
+        DO NOT quote or reference this knowledge explicitly.
 
-TGCI KNOWLEDGE:
-{tgci_knowledge}
-"""
+        TGCI KNOWLEDGE:
+        {tgci_knowledge}
+        """
     },
     {
         "role": "system",
@@ -132,23 +148,23 @@ TGCI KNOWLEDGE:
     {
         "role": "system",
         "content": f"""
-You are generating content using TGCI grantsmanship standards.
+        You are generating content using TGCI grantsmanship standards.
 
-Use TGCI knowledge ONLY for:
-- tone
-- structure
-- evaluation logic
+        Use TGCI knowledge ONLY for:
+        - tone
+        - structure
+        - evaluation logic
 
-Never invent facts.
-Never embellish missing data.
+        Never invent facts.
+        Never embellish missing data.
 
-TGCI KNOWLEDGE:
-{tgci_knowledge}
-"""
+        TGCI KNOWLEDGE:
+        {tgci_knowledge}
+    """
     },
     {"role": "system", "content": TGCI_GENERATION_PROMPT},
     {"role": "user", "content": str(context)}
-],
+    ],
             temperature=0.2
         )
         raw_output = json.loads(ai_response2.choices[0].message.content)
