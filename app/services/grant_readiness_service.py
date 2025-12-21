@@ -27,20 +27,6 @@ def analyze_with_website(payload):
     return result
 
 
-
-
-
-
-# def analyze_with_website(payload):
-#     context = {
-#         "scenario": "WITH_WEBSITE",
-#         "website_name": payload.website_name,
-#         "url": payload.url,
-#         "mission": payload.mission
-#     }
-#     return run_ai_analysis(context)
-
-
 def analyze_without_website(payload):
     context = {
         "scenario": "WITHOUT_WEBSITE",
