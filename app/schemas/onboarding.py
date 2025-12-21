@@ -10,6 +10,7 @@ class AnalyzeRequestWithWebsite(BaseModel):
     mission: str = Field(...)
 
 class AnalyzeRequestWithoutWebsite(BaseModel):
+    
     mission: str = Field(...)
     core_purpose: str = Field(...)
     type_of_work: str = Field(...)
@@ -38,3 +39,13 @@ class GrantAnalysisResult(BaseModel):
     gaps: List[str] = Field(...)
     recommendations: List[str] = Field(...)
     generated_output: Optional[AnalyzeResponse] = None
+
+
+
+
+
+
+
+
+
+

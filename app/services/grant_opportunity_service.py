@@ -2,6 +2,8 @@ from app.services.llm_service import client
 from app.schemas.grant_opportunity import GrantOpportunityAnalysis, GrantOpportunityDetails
 from app.services.tgci_knowledge import load_tgci_knowledge
 from app.data.org_store import get_organization_analysis
+from app.data.grant_store import save_grant_analysis
+
 import json
 
 import io
@@ -40,7 +42,7 @@ Return JSON ONLY in the following format:
   "key_strengths": "",
   "areas_for_improvement": "",
   "extracted_details": {
-    "founder_name": "",
+    "funder_name": "",
     "focus_area": "",
     "deadline": "",
     "eligibility": "",
@@ -129,12 +131,18 @@ def analyze_grant_opportunity(input_data, session_id: str):
 
     details = GrantOpportunityDetails(**raw_output.get("extracted_details", {}))
 
-    return GrantOpportunityAnalysis(
+    analysis = GrantOpportunityAnalysis(
         key_strengths=raw_output.get("key_strengths"),
         areas_for_improvement=raw_output.get("areas_for_improvement"),
         extracted_details=details,
         status=raw_output.get("status")
     )
+
+
+    save_grant_analysis(session_id, analysis.dict())
+
+    return analysis
+
 
 
 # def analyze_grant_opportunity(input_data):

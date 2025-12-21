@@ -8,6 +8,26 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 tgci_knowledge = load_tgci_knowledge()
 
 
+TGCI_ORG_PROFILE_PROMPT = """
+Extract and structure the organization's factual profile
+using ONLY the provided information.
+
+STRICT RULES:
+- Do NOT invent facts
+- Do NOT evaluate readiness
+- If information is missing, write high-level factual language
+
+Generate:
+- mission_statement
+- programs
+- achievements
+- budget_statement
+- evaluation
+
+Return JSON ONLY.
+"""
+
+
 TGCI_READINESS_PROMPT = """
 You are a TGCI-trained grant readiness evaluator.
 
@@ -50,27 +70,7 @@ Return JSON ONLY in the following format:
 """
 
 
-TGCI_GENERATION_PROMPT = """
-The organization has been determined to be GRANT READY.
 
-Generate proposal-ready content using ONLY the information
-explicitly provided in the organization profile.
-
-STRICT RULES:
-- Do NOT invent programs, budgets, metrics, or achievements
-- If information is missing, write in high-level but factual language
-- Use TGCI grantsmanship tone and structure
-- No assumptions, no fictional data
-
-Generate:
-- mission_statement
-- programs
-- achievements
-- budget_statement
-- evaluation
-
-Return JSON ONLY.
-"""
 
 
 def normalize_generated_output(gen_output: dict) -> dict:
@@ -92,89 +92,161 @@ def normalize_generated_output(gen_output: dict) -> dict:
 
 
 def run_ai_analysis(context: dict):
-    ai_response = client.chat.completions.create(
+    # ---------- STEP 1: ALWAYS generate organizational profile ----------
+    profile_response = client.chat.completions.create(
         model="gpt-4.1",
-        messages = [
-    {
-        "role": "system",
-        "content": f"""
-        You are a TGCI-trained evaluator.
+        messages=[
+            {
+                "role": "system",
+                "content": f"""
+You are a TGCI-trained grants professional.
 
-        You have internal knowledge of TGCI books, training materials,
-        and grantsmanship frameworks.
+Use TGCI knowledge ONLY to structure content,
+never to invent facts.
 
-        Use the following TGCI KNOWLEDGE ONLY to:
-        - judge correctness
-        - evaluate maturity
-        - validate structure and patterns
-
-        DO NOT quote or reference this knowledge explicitly.
-
-        TGCI KNOWLEDGE:
-        {tgci_knowledge}
-        """
-    },
-    {
-        "role": "system",
-        "content": TGCI_READINESS_PROMPT
-    },
-    {
-        "role": "user",
-        "content": str(context)
-    }
-],
+TGCI KNOWLEDGE:
+{tgci_knowledge}
+"""
+            },
+            {"role": "system", "content": TGCI_ORG_PROFILE_PROMPT},
+            {"role": "user", "content": str(context)}
+        ],
         temperature=0.2
     )
 
-    response_content = ai_response.choices[0].message.content
-    readiness = json.loads(response_content)
+    raw_profile = json.loads(profile_response.choices[0].message.content)
+    generated_output = normalize_generated_output(raw_profile)
+
+    # ---------- STEP 2: Readiness evaluation ----------
+    readiness_response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role": "system",
+                "content": f"""
+You are a TGCI-trained grant readiness evaluator.
+
+Use TGCI knowledge ONLY to judge readiness.
+
+TGCI KNOWLEDGE:
+{tgci_knowledge}
+"""
+            },
+            {"role": "system", "content": TGCI_READINESS_PROMPT},
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "organization_profile": generated_output,
+                        "raw_context": context
+                    }
+                )
+            }
+        ],
+        temperature=0.2
+    )
+
+    readiness = json.loads(readiness_response.choices[0].message.content)
 
     # Normalize status
     status = readiness["status"].strip().upper()
     if status not in ["GRANT_READY", "NEEDS_MINOR_IMPROVEMENTS", "NOT_READY"]:
-        if "MINOR" in status:
-            status = "NEEDS_MINOR_IMPROVEMENTS"
-        else:
-            status = "NOT_READY"
-
-    readiness["status"] = status
-
-    # Generate content if ready
-    generated_output = None
-    if status == "GRANT_READY":
-        ai_response2 = client.chat.completions.create(
-            model="gpt-4.1",
-            messages=[
-    {
-        "role": "system",
-        "content": f"""
-        You are generating content using TGCI grantsmanship standards.
-
-        Use TGCI knowledge ONLY for:
-        - tone
-        - structure
-        - evaluation logic
-
-        Never invent facts.
-        Never embellish missing data.
-
-        TGCI KNOWLEDGE:
-        {tgci_knowledge}
-    """
-    },
-    {"role": "system", "content": TGCI_GENERATION_PROMPT},
-    {"role": "user", "content": str(context)}
-    ],
-            temperature=0.2
-        )
-        raw_output = json.loads(ai_response2.choices[0].message.content)
-        generated_output = normalize_generated_output(raw_output)
-
+        status = "NEEDS_MINOR_IMPROVEMENTS"
 
     return {
-        "status": readiness["status"],
+        "status": status,
         "score": readiness["score"],
         "gaps": readiness["gaps"],
         "recommendations": readiness["recommendations"],
-        "generated_output": generated_output
+        "generated_output": generated_output   # ✅ ALWAYS PRESENT
     }
+
+
+
+# def run_ai_analysis(context: dict):
+#     ai_response = client.chat.completions.create(
+#         model="gpt-4.1",
+#         messages = [
+#     {
+#         "role": "system",
+#         "content": f"""
+#         You are a TGCI-trained evaluator.
+
+#         You have internal knowledge of TGCI books, training materials,
+#         and grantsmanship frameworks.
+
+#         Use the following TGCI KNOWLEDGE ONLY to:
+#         - judge correctness
+#         - evaluate maturity
+#         - validate structure and patterns
+
+#         DO NOT quote or reference this knowledge explicitly.
+
+#         TGCI KNOWLEDGE:
+#         {tgci_knowledge}
+#         """
+#     },
+#     {
+#         "role": "system",
+#         "content": TGCI_READINESS_PROMPT
+#     },
+#     {
+#         "role": "user",
+#         "content": str(context)
+#     }
+# ],
+#         temperature=0.2
+#     )
+
+#     response_content = ai_response.choices[0].message.content
+#     readiness = json.loads(response_content)
+
+#     # Normalize status
+#     status = readiness["status"].strip().upper()
+#     if status not in ["GRANT_READY", "NEEDS_MINOR_IMPROVEMENTS", "NOT_READY"]:
+#         if "MINOR" in status:
+#             status = "NEEDS_MINOR_IMPROVEMENTS"
+#         else:
+#             status = "NOT_READY"
+
+#     readiness["status"] = status
+
+#     # Generate content if ready
+#     generated_output = None
+#     if status == "GRANT_READY":
+#         ai_response2 = client.chat.completions.create(
+#             model="gpt-4.1",
+#             messages=[
+#     {
+#         "role": "system",
+#         "content": f"""
+#         You are generating content using TGCI grantsmanship standards.
+
+#         Use TGCI knowledge ONLY for:
+#         - tone
+#         - structure
+#         - evaluation logic
+
+#         Never invent facts.
+#         Never embellish missing data.
+
+#         TGCI KNOWLEDGE:
+#         {tgci_knowledge}
+#     """
+#     },
+#     {"role": "system", "content": TGCI_GENERATION_PROMPT},
+#     {"role": "user", "content": str(context)}
+#     ],
+#             temperature=0.2
+#         )
+#         raw_output = json.loads(ai_response2.choices[0].message.content)
+#         generated_output = normalize_generated_output(raw_output)
+
+
+#     return {
+#         "status": readiness["status"],
+#         "score": readiness["score"],
+#         "gaps": readiness["gaps"],
+#         "recommendations": readiness["recommendations"],
+#         "generated_output": generated_output
+#     }

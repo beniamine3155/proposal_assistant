@@ -9,7 +9,8 @@ class GrantOpportunityInput(BaseModel):
 
 # ---------------- OUTPUT ----------------
 class GrantOpportunityDetails(BaseModel):
-    founder_name: Optional[str] = Field(None)
+    funder_name: Optional[str] = Field(None)
+
     focus_area: Optional[str] = Field(None)
     deadline: Optional[str] = Field(None)
     eligibility: Optional[str] = Field(None)
