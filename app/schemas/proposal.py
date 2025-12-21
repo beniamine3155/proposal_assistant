@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 from uuid import UUID
 
+from pydantic import BaseModel
+from typing import Optional
+
+class BudgetSummary(BaseModel):
+    category: Optional[str] = ""
+    details: Optional[str] = ""
+    estimated_cost: Optional[str] = ""
+
 
 class ProposalResponse(BaseModel):
     session_id: UUID
@@ -11,5 +19,5 @@ class ProposalResponse(BaseModel):
     methods_and_activities: str
     evaluation_plan: str
     sustainability_plan: str
-    budget_summary: str
+    budget_summary:  BudgetSummary
     conclusion: str

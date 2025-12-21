@@ -53,6 +53,14 @@ OUTPUT FORMAT (JSON ONLY):
 """
 
 def normalize_proposal_output(raw_output: dict, session_id: str):
+    # Handle budget_summary as a structured dict
+    budget = raw_output.get("budget_summary", {})
+    normalized_budget = {
+        "category": budget.get("category", "") if isinstance(budget, dict) else "",
+        "details": budget.get("details", "") if isinstance(budget, dict) else "",
+        "estimated_cost": budget.get("estimated_cost", "") if isinstance(budget, dict) else ""
+    }
+
     return {
         "executive_summary": raw_output.get("executive_summary", ""),
         "introduction_to_organization": raw_output.get("organization_background", ""),
@@ -61,10 +69,11 @@ def normalize_proposal_output(raw_output: dict, session_id: str):
         "methods_and_activities": raw_output.get("program_description", ""),
         "evaluation_plan": raw_output.get("evaluation_plan", ""),
         "sustainability_plan": raw_output.get("sustainability_plan", ""),
-        "budget_summary": raw_output.get("budget_summary", ""),
+        "budget_summary": normalized_budget,
         "conclusion": raw_output.get("conclusion", ""),
         "session_id": session_id
     }
+
 
 
 
