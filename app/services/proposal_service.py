@@ -53,7 +53,7 @@ OUTPUT FORMAT (JSON ONLY):
 """
 
 def normalize_proposal_output(raw_output: dict, session_id: str):
-    # Handle budget_summary as a structured dict
+   
     budget = raw_output.get("budget_summary", {})
     normalized_budget = {
         "category": budget.get("category", "") if isinstance(budget, dict) else "",
@@ -101,9 +101,9 @@ def generate_proposal(session_id: str):
             {"role": "user", "content": json.dumps(context, default=str)}
         ],
         temperature=0.2
-    )
+    ) 
 
     proposal = json.loads(response.choices[0].message.content)
     
-    # ✅ Normalize output to ensure all fields exist
+ 
     return normalize_proposal_output(proposal, session_id)
