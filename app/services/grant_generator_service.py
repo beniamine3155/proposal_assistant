@@ -38,24 +38,28 @@ OUTPUT ONLY VALID JSON:
 }
 """
 
-def normalize_grant_output(raw_output: dict) -> list:
+
+def normalize_grant_output(raw_output: dict, org_session_id: str) -> list:
     """
     Convert AI-generated grant fields into your GrantResponse schema
-    and assign a unique session_id to each grant.
+    and assign a unique grant_id to each grant. 
+    Use the **organization session id** for all grants.
     """
     normalized_grants = []
     for g in raw_output.get("grants", []):
-        session_id = str(uuid.uuid4())
         normalized_grants.append({
+            "grant_id": str(uuid.uuid4()),  # unique for each grant
+            "session_id": org_session_id,   # same for all 3 grants
             "title": g.get("title", ""),
             "focus_area": g.get("focus", ""),
             "eligibility": g.get("funder", ""),
             "funding_amount": g.get("award", ""),
             "duration": g.get("deadline", ""),
-            "rationale": g.get("alignment", ""),
-            "session_id": session_id
+            "rationale": g.get("alignment", "")
         })
     return normalized_grants
+
+
 
 async def generate_top_grants(session_id: str, sample_grants: list = None, top_n: int = 3) -> list:
     """
@@ -97,15 +101,7 @@ SAMPLE GRANTS:
     raw_output = json.loads(cleaned)
 
     # Normalize output and assign session_id
-    normalized_grants = normalize_grant_output(raw_output)
-
-    # Save each grant in org store with its session_id
-    for grant in normalized_grants:
-        save_organization_analysis(
-            grant["session_id"],  # session id for this grant
-            org_profile,          # org info
-            {"generated_output": org_profile, "grant": grant}  # store grant data
-        )
+    normalized_grants = normalize_grant_output(raw_output, org_session_id=session_id)
 
     # Return only top N grants
     return normalized_grants[:top_n]

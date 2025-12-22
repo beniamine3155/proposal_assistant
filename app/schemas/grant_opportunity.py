@@ -22,3 +22,7 @@ class GrantOpportunityAnalysis(BaseModel):
     areas_for_improvement: Optional[str] = Field(None)
     extracted_details: Optional[GrantOpportunityDetails] = None
     status: Literal["NOT_ALIGNED", "POSSIBLY_ALIGNED", "STRONG_FIT"]
+    
+class GrantOpportunityAnalyzeResponse(BaseModel):
+    combined_session_id: str
+    analysis: GrantOpportunityAnalysis

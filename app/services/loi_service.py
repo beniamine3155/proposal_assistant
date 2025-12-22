@@ -69,13 +69,14 @@ def generate_loi(session_id: str):
     if "created_at" in org_data_serializable:
         org_data_serializable["created_at"] = org_data_serializable["created_at"].isoformat()
 
-    
+    analysis = org_data.get("analysis", {})
 
     context = {
-        "organization": org_data_serializable,
+        "organization": analysis.get("organization", {}),
+        "grant": analysis.get("grant", {}),
         "task": "Generate LOI following TGCI standards"
     }
-
+    
     response = client.chat.completions.create(
         model="gpt-4.1",
         messages=[

@@ -2,10 +2,11 @@ from app.services.llm_service import client
 from app.schemas.grant_opportunity import GrantOpportunityAnalysis, GrantOpportunityDetails
 from app.services.tgci_knowledge import load_tgci_knowledge
 from app.data.org_store import get_organization_analysis
-from app.data.grant_store import save_grant_analysis
+from app.data.org_store import save_organization_analysis
+
 
 import json
-
+import uuid
 import io
 import pdfplumber
 from docx import Document
@@ -94,6 +95,26 @@ def extract_text_from_file(file_bytes: bytes) -> str:
 
 
 
+def create_combined_session(org_session_id: str, grant_analysis: dict):
+    org_data = get_organization_analysis(org_session_id)
+    if not org_data:
+        raise ValueError("Invalid org session")
+
+    new_session_id = str(uuid.uuid4())
+
+    combined_payload = {
+        "organization": org_data,
+        "grant": grant_analysis
+    }
+
+    save_organization_analysis(
+        new_session_id,
+        payload={"source": "UPLOADED_GRANT"},
+        analysis=combined_payload
+    )
+
+    return new_session_id
+
 
 
 def analyze_grant_opportunity(input_data, session_id: str):
@@ -131,6 +152,7 @@ def analyze_grant_opportunity(input_data, session_id: str):
 
     details = GrantOpportunityDetails(**raw_output.get("extracted_details", {}))
 
+
     analysis = GrantOpportunityAnalysis(
         key_strengths=raw_output.get("key_strengths"),
         areas_for_improvement=raw_output.get("areas_for_improvement"),
@@ -139,7 +161,15 @@ def analyze_grant_opportunity(input_data, session_id: str):
     )
 
 
-    save_grant_analysis(session_id, analysis.dict())
+    new_session_id = create_combined_session(
+        org_session_id=session_id,
+        grant_analysis=analysis.dict()
+    )
 
-    return analysis
+    return {
+        "combined_session_id": new_session_id,
+        "analysis": analysis.dict()
+    }
+
+
 

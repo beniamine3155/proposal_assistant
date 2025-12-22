@@ -3,6 +3,7 @@ from typing import List
 from uuid import UUID
 
 class GrantOpportunity(BaseModel):
+    grant_id: str
     session_id: UUID
     title: str
     focus_area: str

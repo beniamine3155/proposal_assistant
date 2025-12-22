@@ -1,10 +1,10 @@
 from fastapi import APIRouter, UploadFile, Form, File
-from app.schemas.grant_opportunity import GrantOpportunityInput, GrantOpportunityAnalysis
+from app.schemas.grant_opportunity import GrantOpportunityInput,  GrantOpportunityAnalyzeResponse
 from app.services.grant_opportunity_service import analyze_grant_opportunity
 
 router = APIRouter(prefix="/grant", tags=["Grant Opportunity"])
 
-@router.post("/analyze", response_model=GrantOpportunityAnalysis)
+@router.post("/analyze", response_model=GrantOpportunityAnalyzeResponse)
 async def analyze_grant_opportunity_endpoint(
     session_id: str = Form(...),
     rfp_file: UploadFile | None = File(None),
