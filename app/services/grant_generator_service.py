@@ -22,6 +22,14 @@ TASK:
 - Do NOT copy sample grants
 - Each grant must look realistic and funder-driven
 
+FOCUS FIELD RULES (VERY IMPORTANT):
+- The "focus" value MUST be a SHORT CATEGORY only
+- Use ONE of these or something very similar:
+  Education, Health, Environment, Climate, Gender,
+  Child Protection, Youth Development, Nutrition,
+  Water & Sanitation, Humanitarian Aid
+- Do NOT write long descriptions in focus
+
 OUTPUT ONLY VALID JSON:
 
 {

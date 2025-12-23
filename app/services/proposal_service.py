@@ -37,6 +37,20 @@ INPUT CONTEXT:
 - Organization analysis
 - Grant opportunity alignment analysis
 
+BUDGET HANDLING RULES (VERY IMPORTANT):
+- If explicit budget data (amounts, line items) is provided, summarize it accurately.
+- If NO budget data is provided:
+  - Infer ONLY high-level budget categories based on the described program activities.
+  - Allowed categories include (but are not limited to):
+    Personnel, Program Costs, Training, Materials, Evaluation, Administration.
+  - Do NOT invent dollar amounts.
+  - Use "TBD" for all cost fields.
+  - Provide brief factual descriptions explaining what each category would cover.
+- If even categories cannot be reasonably inferred, write a descriptive narrative
+  explaining expected cost areas without listing categories.
+
+
+
 OUTPUT FORMAT (JSON ONLY):
 {
   "executive_summary": "",
@@ -47,19 +61,33 @@ OUTPUT FORMAT (JSON ONLY):
   "evaluation_plan": "",
   "organizational_capacity": "",
   "sustainability_plan": "",
-  "budget_summary": "",
+  "budget_summary": {
+    "line_items": [
+        {
+        "category": "",
+        "description": "",
+        "estimated_cost": ""
+        }
+    ],
+    "total_estimated_budget": ""
+    }
   "conclusion": ""
+
 }
 """
 
 def normalize_proposal_output(raw_output: dict, session_id: str):
-   
     budget = raw_output.get("budget_summary", {})
-    normalized_budget = {
-        "category": budget.get("category", "") if isinstance(budget, dict) else "",
-        "details": budget.get("details", "") if isinstance(budget, dict) else "",
-        "estimated_cost": budget.get("estimated_cost", "") if isinstance(budget, dict) else ""
-    }
+
+    # Normalize line items
+    normalized_line_items = []
+    if isinstance(budget, dict):
+        for item in budget.get("line_items", []):
+            normalized_line_items.append({
+                "category": item.get("category", ""),
+                "description": item.get("description", ""),
+                "estimated_cost": item.get("estimated_cost", "")
+            })
 
     return {
         "executive_summary": raw_output.get("executive_summary", ""),
@@ -69,10 +97,15 @@ def normalize_proposal_output(raw_output: dict, session_id: str):
         "methods_and_activities": raw_output.get("program_description", ""),
         "evaluation_plan": raw_output.get("evaluation_plan", ""),
         "sustainability_plan": raw_output.get("sustainability_plan", ""),
-        "budget_summary": normalized_budget,
+        "budget_summary": {
+            "line_items": normalized_line_items,
+            "total_estimated_budget": budget.get("total_estimated_budget", "")
+        },
         "conclusion": raw_output.get("conclusion", ""),
         "session_id": session_id
     }
+
+
 
 
 
